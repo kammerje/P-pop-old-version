@@ -1,0 +1,1 @@
+Ftherm_star	Ftherm_planet	Frefl_planet	
