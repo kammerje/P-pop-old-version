@@ -5,8 +5,8 @@ http://adsabs.harvard.edu/abs/2018A%26A...609A...4K. This library is maintained
 on GitHub at https://github.com/kammerje/p_pop.
 
 Author: Jens Kammerer
-Version: 3.0.0
-Last edited: 05.04.19
+Version: 3.0.1
+Last edited: 22.05.19
 """
 
 
@@ -76,6 +76,7 @@ SC = io.read_20pc_bright_sample(path='data/20pc_bright_sample.tbl',
                                 max_dec=90) # Declination cut (deg) for the star catalog
 
 #==============================================================================
+# GENERATE PLANET POPULATION
 
 logfile = open(logfile_name, 'w')
 logfile.write('nMC\tRp\tPorb\ta\trp\tang_sep\tang_sep_max\tinc\tOmega\tomega\ttheta\tecc\tFinc\tAbond\tAgeomMIR\tAgeomVIS\tf\tTp\tMp\tdist\tRs\tTs\tMs\tstype\tzodis\tra\tdec\tnstar\t\n')
@@ -110,6 +111,7 @@ for i in range(len(SC)):
 import pdb; pdb.set_trace()
 
 #==============================================================================
+# COMPUTE FLUXES
 
 # Read LIFE filters
 name1 = 'F560W'
@@ -123,12 +125,13 @@ logfile = open(logfile_name[:-4]+'_LIFE.txt', 'w')
 logfile.write('Ftherm_star\tFtherm_planet\tFrefl_planet\t\n')
 logfile.close()
 planets = open(logfile_name, 'r')
-planets = planets.readlines()
+planets_lines = planets.readlines()
 
 i = 0
-for line in planets:
+for line in planets_lines:
     line_temp = line.split('\t')
     if (i == 0):
+        ncol = len(line_temp)
         col_Rp = np.where(np.array(line_temp) == 'Rp')[0][0]
         col_Tp = np.where(np.array(line_temp) == 'Tp')[0][0]
         col_rp = np.where(np.array(line_temp) == 'rp')[0][0]
@@ -138,7 +141,7 @@ for line in planets:
         col_dist = np.where(np.array(line_temp) == 'dist')[0][0]
         col_Rs = np.where(np.array(line_temp) == 'Rs')[0][0]
         col_Ts = np.where(np.array(line_temp) == 'Ts')[0][0]
-    else:
+    elif (len(line_temp) == ncol):
         flux = pp.flux(Rp=float(line_temp[col_Rp]),
                        Tp=float(line_temp[col_Tp]),
                        rp=float(line_temp[col_rp]),
@@ -192,10 +195,13 @@ for line in planets:
         logfile = open(logfile_name, 'a')
         logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6)+'\n')
         logfile.close()
-        
-        i += 1
-        if (i % 100000 == 0):
-            print('Processed '+str(i)+' planets')
+    else:
+        print('Line %.0f: unappropriate data' % i)
+        import pdb; pdb.set_trace()
+    
+    i += 1
+    if (i % 1000 == 0):
+        print('Processed '+str(i)+' planets')
 planets.close()
 
 import pdb; pdb.set_trace()
