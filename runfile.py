@@ -5,8 +5,8 @@ http://adsabs.harvard.edu/abs/2018A%26A...609A...4K. This library is maintained
 on GitHub at https://github.com/kammerje/p_pop.
 
 Author: Jens Kammerer
-Version: 3.0.1
-Last edited: 22.05.19
+Version: 3.0.2
+Last edited: 23.05.19
 """
 
 
@@ -108,8 +108,6 @@ for i in range(len(SC)):
             logfile.write('%.0f\t' % j+'%.5f\t' % Exoplanet.Rp+'%.5f\t' % Exoplanet.Porb+'%.5f\t' % Exoplanet.a()+'%.5f\t' % Exoplanet.rp()+'%.5f\t' % Exoplanet.ang_sep()+'%.5f\t' % Exoplanet.ang_sep_max()+'%.5f\t' % Exoplanet.inc+'%.5f\t' % Exoplanet.Omega+'%.5f\t' % Exoplanet.omega+'%.5f\t' % Exoplanet.theta+'%.5f\t' % Exoplanet.ecc+'%.5f\t' % Exoplanet.Finc()+'%.5f\t' % Exoplanet.Abond+'%.5f\t' % Exoplanet.AgeomMIR+'%.5f\t' % Exoplanet.AgeomVIS+'%.5f\t' % Exoplanet.f()+'%.5f\t' % Exoplanet.Tp()+'%.5f\t' % Exoplanet.Mp+'%.5f\t' % Exoplanet.dist+'%.5f\t' % Exoplanet.Rs+'%.5f\t' % Exoplanet.Ts+'%.5f\t' % Exoplanet.Ms+stype+'\t%.5f\t' % Exoplanet.zodis+'%.5f\t' % ra+'%.5f\t' % dec+'%.0f\t' % i+'\n')
             logfile.close()
 
-import pdb; pdb.set_trace()
-
 #==============================================================================
 # COMPUTE FLUXES
 
@@ -156,7 +154,7 @@ for line in planets_lines:
                        lam_eff=filter1[2],
                        W_eff=filter1[3],
                        albedo=albedo)
-        logfile = open(logfile_name, 'a')
+        logfile = open(logfile_name[:-4]+'_LIFE.txt', 'a')
         logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6))
         logfile.close()
         
@@ -174,7 +172,7 @@ for line in planets_lines:
                        lam_eff=filter2[2],
                        W_eff=filter2[3],
                        albedo=albedo)
-        logfile = open(logfile_name, 'a')
+        logfile = open(logfile_name[:-4]+'_LIFE.txt', 'a')
         logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6))
         logfile.close()
         
@@ -192,7 +190,7 @@ for line in planets_lines:
                        lam_eff=filter3[2],
                        W_eff=filter3[3],
                        albedo=albedo)
-        logfile = open(logfile_name, 'a')
+        logfile = open(logfile_name[:-4]+'_LIFE.txt', 'a')
         logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6)+'\n')
         logfile.close()
     else:
@@ -203,5 +201,3 @@ for line in planets_lines:
     if (i % 1000 == 0):
         print('Processed '+str(i)+' planets')
 planets.close()
-
-import pdb; pdb.set_trace()
