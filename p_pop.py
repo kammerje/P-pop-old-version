@@ -1,12 +1,21 @@
 """
-p_pop, a Python package to simulate exoplanet populations based on Kepler
+P_pop, a Python package to simulate exoplanet populations based on Kepler
 statistics. Information about the method can be found in this paper:
-http://adsabs.harvard.edu/abs/2018A%26A...609A...4K. This library is maintained
-on GitHub at https://github.com/kammerje/p_pop.
+https://ui.adsabs.harvard.edu/abs/2018A%26A...609A...4K/abstract. This library
+is maintained on GitHub at https://github.com/kammerje/P_pop.
+
+===============================================================================
+Please cite Kammerer & Quanz 2018 (2018A&A...609A...4K) if you use P_pop for
+your research. Thank you!
+===============================================================================
+
+This repository makes use of "forecaster"
+(https://github.com/chenjj2/forecaster.git, Chen & Kipping 2017,
+2017ApJ...834...17C) which must be cloned into the folder called "forecaster".
 
 Author: Jens Kammerer
-Version: 3.0.2
-Last edited: 23.05.19
+Version: 3.1.0
+Last edited: 30.07.19
 """
 
 
@@ -15,13 +24,13 @@ Last edited: 23.05.19
 import matplotlib.pyplot as plt
 import numpy as np
 
-from mpl_toolkits.mplot3d import axes3d
 import scipy.integrate as si
+import scipy.interpolate as interpolate
 import scipy.optimize as so
 
 import sys
-#sys.path.append('/Volumes/OZ 1/_p_pop/forecaster/forecaster')
-sys.path.append('/home/kjens/Downloads/forecaster/forecaster')
+sys.path.append('/Volumes/OZ 1/_p_pop/forecaster/forecaster')
+sys.path.append('/home/kjens/Downloads/p_pop/forecaster/forecaster')
 import mr_forecast as mr
 
 
@@ -36,8 +45,10 @@ class system():
                  Ts=5772,
                  Ms=1,
                  model=0,
-                 rates='sag13'):
+                 rates='sag13',
+                 albedo_model='uniform'):
         """
+        Initializes system instance
         """
         
         # PARAMETERS FROM INPUT
@@ -80,7 +91,7 @@ class system():
         elif (self.rates == 'hsu2019_dressing2015'):
             dummy = Stats.hsu2019_dressing2015()
         else:
-            raise UserWarning(self.rates+' is not known')
+            raise UserWarning('Planet occurrence rates '+self.rates+' are not known')
         
         self.nplanets = len(dummy[0])
         self.planets = []
@@ -93,7 +104,8 @@ class system():
                                        dist=self.dist,
                                        Rs=self.Rs,
                                        Ts=self.Ts,
-                                       Ms=self.Ms)]
+                                       Ms=self.Ms,
+                                       albedo_model=albedo_model)]
         
         pass
 
@@ -108,8 +120,10 @@ class exoplanet():
                  dist=10,
                  Rs=1,
                  Ts=5772,
-                 Ms=1):
+                 Ms=1,
+                 albedo_model='uniform'):
         """
+        Initializes exoplanet instance
         """
         
         # PARAMETERS FROM INPUT
@@ -135,11 +149,22 @@ class exoplanet():
         # RANDOMLY DRAWN PARAMETERS
         # Planet orbital eccentricity
         self.ecc = 0.
-        # Planet bond albedo
-        self.Abond = 0.8*np.random.rand()
+        # Planet Bond albedo
+        if (albedo_model == 'uniform'):
+            self.Abond = 0.8*np.random.rand()
+        elif (albedo_model == 'cahoy2010'):
+            self.Abond = 0.8*np.random.rand()
+        else:
+            raise UserWarning('Albedo model must be either uniform or cahoy2010')
         # Planet geometric albedo
-        self.AgeomMIR = 0.1*np.random.rand()
-        self.AgeomVIS = 0.6*np.random.rand()
+        if (albedo_model == 'uniform'):
+            self.AgeomMIR = 0.1*np.random.rand()
+            self.AgeomVIS = 0.6*np.random.rand()
+        elif (albedo_model == 'cahoy2010'):
+            self.AgeomMIR = 0.1*np.random.rand()
+            self.AgeomVIS = self.__AgeomVIS_cahoy2010()
+        else:
+            raise UserWarning('Albedo model must be either uniform or cahoy2010')
         # Planet longitude of ascending node
         self.Omega = 2.*np.pi*np.random.rand()
 #        self.Omega = np.pi/2. # quadrature
@@ -155,8 +180,34 @@ class exoplanet():
         
         pass
     
+    def __AgeomVIS_cahoy2010(self):
+        """
+        Computes randomly distributed planet geometric albedo (VIS)
+        
+        Credit: EXOSIMS (https://github.com/dsavransky/EXOSIMS)
+        """
+        
+        # Table 4 of Cahoy et al. 2010
+        sas = [0.8, 2., 5., 10.]
+        fes = [1., 3., 10., 30.]
+        pts = np.array([[0.322, 0.241, 0.209, 0.142], [0.742, 0.766, 0.728, 0.674], [0.567, 0.506, 0.326, 0.303], [0.386, 0.260, 0.295, 0.279]])
+        
+        grid_sa, grid_fe = np.meshgrid(sas, fes)
+        albedo_grid = np.vstack((grid_sa.flatten(), grid_fe.flatten())).T
+        albedo_vals = pts.T.flatten()
+        
+        # Planet semi-major axis & metallicity
+        sa_temp = np.clip(self.a(), 0.8, 10.)
+        fe_temp = np.random.uniform(low=1., high=30.)
+        
+        p = interpolate.griddata(albedo_grid, albedo_vals, (sa_temp, fe_temp), method='cubic')
+        
+        # Return randomly distributed planet geometric albedo (VIS)
+        return p
+    
     def __theta(self):
         """
+        Computes randomly distributed true anomaly (in radians)
         """
         
         # Draw randomly distributed mean anomaly
@@ -174,6 +225,7 @@ class exoplanet():
     
     def a(self):
         """
+        Computes planet semi-major axis (in astronomical units)
         """
         
         # Define constants
@@ -181,25 +233,28 @@ class exoplanet():
         Msun = 1.989E+30
         au = 149597870700.
         
-        # Calculate planet semi-major axis
+        # Return planet semi-major axis
         return ((G*self.Ms*Msun*(self.Porb*86400.)**2.)/(4.*np.pi**2.))**(1./3.)/au
     
     def alpha(self):
         """
+        Computes planet phase angle (in radians)
         """
         
-        # Calculate planet phase angle
+        # Return planet phase angle
         return np.arccos(-np.sin(self.inc)*np.sin(self.omega+self.theta))
     
     def ang_sep(self):
         """
+        Computes angular planet host star separation (in arcseconds)
         """
         
-        # Calculate angular planet host star separation
+        # Return angular planet host star separation
         return self.rp_proj()/self.dist
     
     def ang_sep_max(self):
         """
+        Computes maximal angular planet host star separation (in arcseconds)
         """
         
         #
@@ -207,44 +262,44 @@ class exoplanet():
         
         def ftheta(x,
                    a_temp):
-            """
-            """
             
-            # Calculate projected planet host star separation
+            # Compute projected planet host star separation
             return a_temp*(1.-self.ecc**2.)/(1.+self.ecc*np.cos(x))*np.sqrt(np.cos(self.omega+x)**2.+np.cos(self.inc)**2.*np.sin(self.omega+x)**2.)
         
         def dfdtheta(x,
                      a_temp):
-            """
-            """
             
-            # Calculate derivative of projected planet host star separation with respect to the true anomaly
+            # Compute derivative of projected planet host star separation with respect to the true anomaly
             return a_temp*(1.-self.ecc**2.)*(-1.)*(1.+self.ecc*np.cos(x))**(-2.)*(-self.ecc*np.sin(x))*np.sqrt(np.cos(self.omega+x)**2.+np.cos(self.inc)**2.*np.sin(self.omega+x)**2.)+a_temp*(1.-self.ecc**2.)/(1.+self.ecc*np.cos(x))*0.5*(np.cos(self.omega+x)**2.+np.cos(self.inc)**2.*np.sin(self.omega+x)**2.)**(-0.5)*(2.*np.cos(self.omega+x)*(-np.sin(self.omega+x))+np.cos(self.inc)**2.*2.*np.sin(self.omega+x)*np.cos(self.omega+x))
         
-        # Calculate roots of derivative of projected planet host star separation with respect to the true anomaly
+        # Compute roots of derivative of projected planet host star separation with respect to the true anomaly
         xx = np.linspace(0., 2.*np.pi, 8, endpoint=False)
         x0 = so.fsolve(dfdtheta, xx, args=(a_temp))
         f0 = ftheta(x0, a_temp)
         
-        # Calculate maximum angular planet host star separation
+        # Compute maximal angular planet host star separation
         theta_buffer = self.theta.copy()
         self.theta = x0[np.argmax(f0)] % (2.*np.pi)
         ang_sep_max = self.rp_proj()/self.dist
         self.theta = theta_buffer
         
-        # Return maximum angular planet host star separation
+        # Return maximal angular planet host star separation
         return ang_sep_max
     
     def f(self):
         """
+        Computes Lambertian reflectance
         """
         
-        # Calculate Lambertian reflectance
+        #
         alpha = self.alpha()
+        
+        # Return Lambertian reflectance
         return np.abs((np.sin(alpha)+(np.pi-alpha)*np.cos(alpha))/np.pi)
     
     def Finc(self):
         """
+        Computes incoming stellar flux (in solar constants)
         """
         
         # Define constants
@@ -252,32 +307,35 @@ class exoplanet():
         Rsun = 695700000.
         au = 149597870700.
         
-        # Calculate incoming stellar flux
+        # Return incoming stellar flux
         return sigma*self.Ts**4.*(self.Rs*Rsun)**2./(self.rp()*au)**2./1361.
     
     def rp(self):
         """
+        Computes planet host star separation (in astronomical units)
         """
         
-        # Calculate planet host star separation
+        # Return planet host star separation
         return self.a()*(1.-self.ecc**2.)/(1.+self.ecc*np.cos(self.theta))
     
     def rp_proj(self):
         """
+        Computes projected planet host star separation (in astronomical units)
         """
         
-        # Calculate projected planet host star separation
+        # Return projected planet host star separation
         return self.rp()*np.sqrt(np.cos(self.omega+self.theta)**2.+np.cos(self.inc)**2.*np.sin(self.omega+self.theta)**2.)
     
     def Tp(self):
         """
+        Computes planet equilibrium temperature (in Kelvins)
         """
         
         # Define constants
         Rsun = 695700000.
         au = 149597870700.
         
-        # Calculate planet equilibrium temperature
+        # Return planet equilibrium temperature
         return ((self.Rs*Rsun)**2.*(1.-self.Abond)/(4*(self.rp()*au)**2.))**(1./4.)*self.Ts
 
 class stats():
@@ -286,6 +344,7 @@ class stats():
                  stype='G',
                  model=0):
         """
+        Initializes stats instance
         """
         
         # Host star type
@@ -299,6 +358,9 @@ class stats():
               Rp_range=[0.5, 16.0],
               Porb_range=[0.5, 500.0]):
         """
+        Draws planet radii and planet orbital periods according to SAG13
+        statistics
+        (https://ui.adsabs.harvard.edu/abs/2018ApJ...856..122K/abstract)
         """
         
         # Create lists for planet radii and planet orbital periods
@@ -306,7 +368,7 @@ class stats():
         Porb_sag13 = []
         
         # Check if host star type suits
-        if (self.stype in 'AFGKM'):
+        if (True):
             
             # Use baseline, min or max planet occurrence rates
             if (self.model == 0):
@@ -398,6 +460,9 @@ class stats():
                 Rp_range=[0.5, 16.0],
                 Porb_range=[0.5, 500.0]):
         """
+        Draws planet radii and planet orbital periods according to Hsu et al.
+        2019 statistics
+        (https://ui.adsabs.harvard.edu/abs/2019arXiv190201417H/abstract)
         """
         
         # Create lists for planet radii and planet orbital periods
@@ -405,7 +470,7 @@ class stats():
         Porb_hsu2019 = []
         
         # Check if host star type suits
-        if (self.stype in 'AFGKM'):
+        if (True):
             
             # Parameters from Hsu 2019
             bins_Rp = np.log(np.array([0.5, 0.75, 1., 1.25, 1.5, 1.75, 2., 2.5, 3., 4., 6., 8., 12., 16.]))
@@ -523,6 +588,9 @@ class stats():
                      Rp_range=[0.5, 4.0],
                      Porb_range=[0.5, 200.0]):
         """
+        Draws planet radii and planet orbital periods according to Dressing &
+        Charbonneau 2015 statistics
+        (https://ui.adsabs.harvard.edu/abs/2015ApJ...807...45D/abstract)
         """
         
         # Create lists for planet radii and planet orbital periods
@@ -530,7 +598,7 @@ class stats():
         Porb_dressing2015 = []
         
         # Check if host star type suits
-        if (self.stype in 'AFGKM'):
+        if (True):
             
             # Parameters from Dressing 2015
             bins_Rp = np.log(np.array([0.5, 1., 1.5, 2., 2.5, 3., 3.5, 4.]))
@@ -649,6 +717,9 @@ class stats():
                     Rp_range=[0.8, 22.0],
                     Porb_range=[0.8, 418.0]):
         """
+        Draws planet radii and planet orbital periods according to Fressin et
+        al. 2013 statistics
+        (https://ui.adsabs.harvard.edu/abs/2013ApJ...766...81F/abstract)
         """
         
         # Create lists for planet radii and planet orbital periods
@@ -656,7 +727,7 @@ class stats():
         Porb_fressin2013 = []
         
         # Check if host star type suits
-        if (self.stype in 'AFGKM'):
+        if (True):
             
             # Parameters from Fressin 2013
             bins_Rp = np.log(np.array([0.8, 1.25, 2., 4., 6., 22.]))
@@ -772,6 +843,9 @@ class stats():
     
     def sag13_dressing2015(self):
         """
+        Draws planet radii and planet orbital periods according to
+        - SAG13 for AFGK stars
+        - Dressing & Charbonneau 2015 for M stars
         """
         
         if (self.stype in 'AFGK'):
@@ -785,6 +859,9 @@ class stats():
     
     def hsu2019_dressing2015(self):
         """
+        Draws planet radii and planet orbital periods according to
+        - Hsu et al. 2019 for AFGK stars
+        - Dressing & Charbonneau 2015 for M stars
         """
         
         if (self.stype in 'AFGK'):
@@ -812,38 +889,11 @@ class flux():
                  trans=np.ones((20)),
                  lam_eff=10,
                  W_eff=2,
-                 albedo='MIR'):
+                 mission='MIR',
+                 mags=None,
+                 F0=None):
         """
-        Parameters
-        ----------
-        Rp : float
-            Planet radius (Earth radii)
-        Tp : float
-            Planet effective temperature (Kelvins)
-        rp : float
-            Planet host star separation (astronomical units)
-        AgeomMIR : float
-            Planet geometric albedo (MIR)
-        AgeomVIS : float
-            Planet geometric albedo (VIS)
-        f : float
-            Lambertian reflectance
-        dist : float
-            Host star distance from Earth (parsecs)
-        Rs : float
-            Host star radius (Solar radii)
-        Ts : float
-            Host star effective temperature (Kelvins)
-        nodes : numpy.ndarray
-            Filter nodes (microns)
-        trans : numpy.ndarray
-            Filter transmission
-        lam_eff : float
-            Filter effective wavelength (microns)
-        W_eff : float
-            Filter effective width (microns)
-        albedo : str
-            MIR to use AgeomMIR or VIS to use AgeomVIS
+        Initializes flux instance
         """
         
         # Planet radius
@@ -901,43 +951,53 @@ class flux():
         self.Ts = Ts
         
         # Filter nodes
-        if (isinstance(nodes, np.ndarray) == False):
-            raise TypeError('nodes must be of type numpy.ndarray')
+        if (nodes is not None): # CAN BE NONE
+            if (isinstance(nodes, np.ndarray) == False):
+                raise TypeError('nodes must be of type numpy.ndarray')
         self.nodes = nodes
         
         # Filter transmission
-        if (isinstance(trans, np.ndarray) == False):
-            raise TypeError('trans must be of type numpy.ndarray')
-        if (len(nodes) != len(trans)):
-            raise ValueError('trans must have the same length like nodes')
+        if (trans is not None): # CAN BE NONE
+            if (isinstance(trans, np.ndarray) == False):
+                raise TypeError('trans must be of type numpy.ndarray')
+            if (len(nodes) != len(trans)):
+                raise ValueError('trans must have the same length like nodes')
         self.trans = trans
         
         # Filter effective wavelength
-        lam_eff = float(lam_eff)
-        if (lam_eff <= 0):
-            raise ValueError('lam_eff must be positive')
+        if (lam_eff is not None): # CAN BE NONE
+            lam_eff = float(lam_eff)
+            if (lam_eff <= 0):
+                raise ValueError('lam_eff must be positive')
         self.lam_eff = lam_eff
         
         # Filter effective width
-        W_eff = float(W_eff)
-        if (W_eff <= 0):
-            raise ValueError('W_eff must be positive')
+        if (W_eff is not None): # CAN BE NONE
+            W_eff = float(W_eff)
+            if (W_eff <= 0):
+                raise ValueError('W_eff must be positive')
         self.W_eff = W_eff
         
-        self.albedo = albedo
+        # Mission operating wavelength
+        self.mission = mission
+        
+        # Host star magnitude
+        if (mags is not None):  # CAN BE NONE
+            mags = float(mags)
+        self.mags = mags
+        
+        # Filter zero point (of the filter with which mags was measured)
+        if (F0 is not None):  # CAN BE NONE
+            F0 = float(F0)
+            if (F0 <= 0):
+                raise ValueError('F0 must be positive')
+        self.F0 = F0
     
     def bb_therm_p(self,
                    lam = np.logspace(-1, 2, 100)):
         """
-        Parameters
-        ----------
-        lam : numpy.ndarray
-            Wavelengths (microns)
-        
-        Returns
-        -------
-        bb_therm_p : numpy.ndarray
-            Planet thermal blackbody flux (Watts per square meter per micron)
+        Computes planet thermal blackbody flux (in Watts per square meter per
+        micron)
         """
         
         # Check parameters
@@ -951,46 +1011,43 @@ class flux():
         Rearth = 6371000.
         pc = 3.0856776E+16
         
-        # Calculate planet thermal blackbody flux
+        # Return planet thermal blackbody flux
         return 1E-6*(2.*np.pi*h*c**2./(lam*1E-6)**5./(np.exp(h*c/(lam*1E-6*kB*self.Tp))-1.)*((self.Rp*Rearth)/(self.dist*pc))**2.)
     
     def bb_therm_p_filter(self):
         """
-        Returns
-        -------
-        bb_therm_p_filter : numpy.ndarray
-            Planet thermal blackbody flux observed through filter (Watts per square meter per micron)
+        Computes planet thermal blackbody flux observed through filter (in
+        Watts per square meter per micron)
         """
         
-        # Calculate planet thermal blackbody flux observed through filter
+        # Check parameters
+        if (self.nodes is None):
+            raise UserWarning('This function is only available if a filter curve is provided')
+        
+        # Return planet thermal blackbody flux observed through filter
         return self.bb_therm_p(self.nodes)*self.trans
     
     def bb_therm_p_int(self):
         """
-        Returns
-        -------
-        bb_therm_p_int : numpy.ndarray
-            Integrated planet thermal blackbody flux observed through filter (Janskys)
+        Computes integrated planet thermal blackbody flux observed through
+        filter (in Janskys)
         """
+        
+        # Check parameters
+        if (self.nodes is None):
+            raise UserWarning('This function is only available if a filter curve is provided')
         
         # Define constants
         c = 299792458.
         
-        # Calculate integrated planet thermal blackbody flux observed through filter
+        # Return integrated planet thermal blackbody flux observed through filter
         return 1E+6*si.simps(self.bb_therm_p(self.nodes)*self.trans, self.nodes)/self.W_eff*(self.lam_eff*1E-6)**2/c*1E+26
     
     def bb_therm_s(self,
                    lam = np.logspace(-1, 2, 100)):
         """
-        Parameters
-        ----------
-        lam : numpy.ndarray
-            Wavelengths (in microns)
-        
-        Returns
-        -------
-        bb_therm_s : numpy.ndarray
-            Host star thermal blackbody flux (Watts per square meter per micron)
+        Computes host star thermal blackbody flux (in Watts per square meter 
+        per micron)
         """
         
         # Check parameters
@@ -1004,46 +1061,43 @@ class flux():
         Rsun = 695700000.
         pc = 3.0856776E+16
         
-        # Calculate host star thermal blackbody flux
+        # Return host star thermal blackbody flux
         return 1E-6*(2.*np.pi*h*c**2./(lam*1E-6)**5./(np.exp(h*c/(lam*1E-6*kB*self.Ts))-1.)*((self.Rs*Rsun)/(self.dist*pc))**2.)
     
     def bb_therm_s_filter(self):
         """
-        Returns
-        -------
-        bb_therm_s_filter : numpy.ndarray
-            Host star thermal blackbody flux observed through filter (Watts per square meter per micron)
+        Computes host star thermal blackbody flux observed through filter (in
+        Watts per square meter per micron)
         """
         
-        # Calculate host star thermal blackbody flux observed through filter
+        # Check parameters
+        if (self.nodes is None):
+            raise UserWarning('This function is only available if a filter curve is provided')
+        
+        # Return host star thermal blackbody flux observed through filter
         return self.bb_therm_s(self.nodes)*self.trans
     
     def bb_therm_s_int(self):
         """
-        Returns
-        -------
-        bb_therm_s_int : numpy.ndarray
-            Integrated host star thermal blackbody flux observed through filter (Janskys)
+        Computes integrated host star thermal blackbody flux observed through
+        filter (in Janskys)
         """
+        
+        # Check parameters
+        if (self.nodes is None):
+            raise UserWarning('This function is only available if a filter curve is provided')
         
         # Define constants
         c = 299792458.
         
-        # Calculate integrated host star thermal blackbody flux observed through filter
+        # Return integrated host star thermal blackbody flux observed through filter
         return 1E+6*si.simps(self.bb_therm_s(self.nodes)*self.trans, self.nodes)/self.W_eff*(self.lam_eff*1E-6)**2/c*1E+26
     
     def refl_p(self,
                lam = np.logspace(-1, 2, 100)):
         """
-        Parameters
-        ----------
-        lam : numpy.ndarray
-            Wavelengths (in microns)
-        
-        Returns
-        -------
-        refl : numpy.ndarray
-            Planet reflected host star flux (Watts per square meter per micron)
+        Computes planet reflected host star flux (in Watts per square meter per
+        micron)
         """
         
         # Check parameters
@@ -1059,36 +1113,85 @@ class flux():
         Rsun = 695700000.
         au = 149597870700.
         
-        # Calculate planet reflected host star flux
-        if (self.albedo == 'MIR'):
+        # Return planet reflected host star flux
+        if (self.mission == 'MIR'):
             return self.AgeomMIR*self.f*((self.Rp*Rearth)/(self.dist*pc))**2.*(1E-6*(2.*np.pi*h*c**2./(lam*1E-6)**5./(np.exp(h*c/(lam*1E-6*kB*self.Ts))-1.)*((self.Rs*Rsun)/(self.rp*au))**2.))
-        if (self.albedo == 'VIS'):
+        if (self.mission == 'VIS'):
             return self.AgeomVIS*self.f*((self.Rp*Rearth)/(self.dist*pc))**2.*(1E-6*(2.*np.pi*h*c**2./(lam*1E-6)**5./(np.exp(h*c/(lam*1E-6*kB*self.Ts))-1.)*((self.Rs*Rsun)/(self.rp*au))**2.))
         else:
-            raise UserWarning('Albedo must be either MIR or VIS')
-
+            raise UserWarning('Mission operating wavelength must be either MIR or VIS')
     
     def refl_p_filter(self):
         """
-        Returns
-        -------
-        obs_p_filter : numpy.ndarray
-            Planet reflected host star flux observed through filter (Watt per square meter per micron)
+        Computes planet reflected host star flux observed through filter (in
+        Watts per square meter per micron)
         """
         
-        # Calculate planet reflected host star flux observed through filter
+        # Check parameters
+        if (self.nodes is None):
+            raise UserWarning('This function is only available if a filter curve is provided')
+        
+        # Return planet reflected host star flux observed through filter
         return self.refl_p(self.nodes)*self.trans
     
     def refl_p_int(self):
         """
-        Returns
-        -------
-        obs_p_int : numpy.ndarray
-            Integrated planet reflected host star flux observed through filter (Janskys)
+        Computes integrated planet reflected host star flux observed through
+        filter (in Janskys)
         """
+        
+        # Check parameters
+        if (self.nodes is None):
+            raise UserWarning('This function is only available if a filter curve is provided')
         
         # Define constants
         c = 299792458.
         
-        # Calculate integrated planet reflected host star flux observed through filter
+        # Return integrated planet reflected host star flux observed through filter
         return 1E+6*si.simps(self.refl_p(self.nodes)*self.trans, self.nodes)/self.W_eff*(self.lam_eff*1E-6)**2/c*1E+26
+    
+    def s_uJy(self):
+        """
+        Computes observed host star flux (in micro-Janskys)
+        """
+        
+        # Check parameters
+        if (self.mags is None):
+            raise UserWarning('This function is only available if a host star magnitude is provided')
+        
+        # Return observed host star flux
+        return 1E+6*self.F0/10**(self.mags/2.5)
+    
+    def p_therm_uJy(self):
+        """
+        Computes observed planet thermal flux (in micro-Janskys)
+        """
+        
+        # Check parameters
+        if (self.mags is None):
+            raise UserWarning('This function is only available if a host star magnitude is provided')
+        
+        # Return observed planet thermal flux
+        return 0.
+
+    
+    def p_refl_uJy(self):
+        """
+        Computes observed planet reflected host star flux (in micro-Janskys)
+        """
+        
+        # Check parameters
+        if (self.mags is None):
+            raise UserWarning('This function is only available if a host star magnitude is provided')
+        
+        # Define constants
+        Rearth = 6371000.
+        au = 149597870700.
+        
+        # Return observed planet reflected host star flux
+        if (self.mission == 'MIR'):
+            return self.AgeomMIR*self.f*(self.Rp*Rearth)**2*self.s_uJy()/(self.rp*au)**2
+        if (self.mission == 'VIS'):
+            return self.AgeomVIS*self.f*(self.Rp*Rearth)**2*self.s_uJy()/(self.rp*au)**2
+        else:
+            raise UserWarning('Mission operating wavelength must be either MIR or VIS')
