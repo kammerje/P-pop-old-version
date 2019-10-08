@@ -14,8 +14,8 @@ This repository makes use of "forecaster"
 2017ApJ...834...17C) which must be cloned into the folder called "forecaster".
 
 Author: Jens Kammerer
-Version: 3.1.0
-Last edited: 30.07.19
+Version: 3.2.0
+Last edited: 08.10.19
 """
 
 
@@ -320,6 +320,215 @@ def read_exocat(path='data/ExoCat.csv',
     io.ascii.write(SC_out, 'data/SC_out.tbl', format = 'ipac')
     
     print('Finished read_exocat')
+    
+    # Return output star catalog
+    return SC_out
+
+def read_ltc(path='data/LTCv2.csv',
+             s_type=['B', 'A', 'F', 'G', 'K', 'M', 'D'],
+             max_dist=30,
+             min_dec=-90,
+             max_dec=90):
+    """
+    Parameters
+    ----------
+    path : str
+        Path of "LTCv2.csv"
+    s_type : list
+        List containing spectral types which should be considered
+    max_dist : float
+        Maximal distance which should be considered (parsec)
+    min_dec : float
+        Minimal declination which should be considered (degree)
+    max_dec : float
+        Maximal declination which should be considered (degree)
+    
+    Returns
+    -------
+    SC : table
+        Star catalog in format of an astropy table
+    """
+    
+    print('Started read_ltc...')
+    
+    # Check parameters
+    if (isinstance(s_type, list) == False):
+        raise TypeError('s_type must be of type list')
+    for i in range(0, len(s_type)):
+        if (isinstance(s_type[i], str) == False):
+            raise TypeError('elements of s_type must be of type str')
+        if (not s_type[i] in ['B', 'A', 'F', 'G', 'K', 'M', 'D']):
+            raise ValueError('elements of s_type must be B, A, F, G, K, M or D')
+    max_dist = float(max_dist)
+    if (max_dist <= 0):
+        raise ValueError('max_dist must be positive')
+    min_dec = float(min_dec)
+    if (min_dec < -90 or min_dec > 90):
+        raise ValueError('min_dec must be between -90 and 90')
+    max_dec = float(max_dec)
+    if (max_dec < -90 or max_dec > 90):
+        raise ValueError('max_dec must be between -90 and 90')
+    if (min_dec >= max_dec):
+        raise ValueError('min_dec must be smaller than max_dec')
+    
+    # Create lists for data
+    name = []
+    dist = []
+    stype = []
+    rad = []
+    teff = []
+    mass = []
+    ra = []
+    dec = []
+    vmag = []
+    jmag = []
+    hmag = []
+    wdssep = []
+    wdsdmag = []
+    
+    # Open file
+    with open(path) as csvfile:
+        data = csv.reader(csvfile, delimiter = ',')
+        
+        # Go through all rows
+        nskip = 0
+        for i, row in enumerate(data):
+            if (i == 0):
+                
+                row = np.array(row)
+                col_name = np.where(row == 'star_name')[0][0]
+                col_dist = np.where(row == 'st_dist')[0][0]
+                col_stype = np.where(row == 'st_spttype')[0][0]
+                col_rad = np.where(row == 'st_rad')[0][0]
+                col_teff = np.where(row == 'st_teff')[0][0]
+                col_mass = np.where(row == 'st_mass')[0][0]
+                col_ra = np.where(row == 'rastr')[0][0]
+                col_dec = np.where(row == 'decstr')[0][0]
+                col_vmag = np.where(row == 'st_vmag')[0][0]
+                col_jmag = np.where(row == 'st_j2m')[0][0]
+                col_hmag = np.where(row == 'st_h2m')[0][0]
+                col_wdssep = np.where(row == 'wds_sep')[0][0]
+                col_wdsdmag = np.where(row == 'wds_deltamag')[0][0]
+            
+            elif (i > 0):
+                
+                name_temp = str(row[col_name])
+                dist_temp = float(row[col_dist])
+                stype_temp = str(row[col_stype])
+                try:
+                    rad_temp = float(row[col_rad])
+                except:
+                    print('Skipping '+name_temp+', empty radius')
+                    nskip += 1
+                    continue
+                try:
+                    teff_temp = float(row[col_teff])
+                except:
+                    print('Skipping '+name_temp+', empty effective temperature')
+                    nskip += 1
+                    continue
+                try:
+                    mass_temp = float(row[col_mass])
+                except:
+                    print('Skipping '+name_temp+', empty mass')
+                    nskip += 1
+                    continue
+                ra_temp = str(row[col_ra])
+                ra_temp = int(ra_temp[0:2])*360./24.+int(ra_temp[3:5])/60.+float(ra_temp[6:11])/3600.
+                dec_temp = str(row[col_dec])
+                temp = int(dec_temp[0:3])
+                if (temp >= 0.):
+                    dec_temp = float(temp)+int(dec_temp[4:6])/60.+float(dec_temp[7:11])/3600.
+                else:
+                    dec_temp = float(temp)-int(dec_temp[4:6])/60.-float(dec_temp[7:11])/3600.
+                try:
+                    vmag_temp = float(row[col_vmag])
+                except:
+                    print('Skipping '+name_temp+', empty V-band magnitude')
+                    nskip += 1
+                    continue
+                try:
+                    jmag_temp = float(row[col_jmag])
+                except:
+                    print('Skipping '+name_temp+', empty J-band magnitude')
+                    nskip += 1
+                    continue
+                try:
+                    hmag_temp = float(row[col_hmag])
+                except:
+                    print('Skipping '+name_temp+', empty H-band magnitude')
+                    nskip += 1
+                    continue
+                try:
+                    wdssep_temp = float(row[col_wdssep])
+                except:
+                    wdssep_temp = np.inf
+                if (np.isinf(wdssep_temp) == False):
+                    wdsdmag_temp = float(row[col_wdsdmag])
+                else:
+                    wdsdmag_temp = np.inf
+                if (len(stype_temp) == 0):
+                    print('Skipping '+name_temp+', empty spectral type')
+                    nskip += 1
+                    continue
+                if (stype_temp[0] not in 'BAFGKMD'):
+                    print('Skipping '+name_temp+', spectral type = '+stype_temp)
+                    nskip += 1
+                    continue
+                
+                # Fill lists for data
+                name += [name_temp]
+                dist += [dist_temp]
+                stype += [stype_temp[0]]
+                rad += [rad_temp]
+                teff += [teff_temp]
+                mass += [mass_temp]
+                ra += [ra_temp]
+                dec += [dec_temp]
+                vmag += [vmag_temp]
+                jmag += [jmag_temp]
+                hmag += [hmag_temp]
+                wdssep += [wdssep_temp]
+                wdsdmag += [wdsdmag_temp]
+    
+    # Convert lists for data to arrays
+    name = np.array(name)
+    dist = np.array(dist)
+    stype = np.array(stype)
+    rad = np.array(rad)
+    teff = np.array(teff)
+    mass = np.array(mass)
+    ra = np.array(ra)
+    dec = np.array(dec)
+    vmag = np.array(vmag)
+    jmag = np.array(jmag)
+    hmag = np.array(hmag)
+    wdssep = np.array(wdssep)
+    wdsdmag = np.array(wdsdmag)
+    
+    print('--> Successfully read '+str(name.shape[0])+' stars, skipped '+str(nskip)+' (= %.1f%%)' % (100.*nskip/(name.shape[0]+nskip)))
+    
+    # Create output star catalog
+    SC_out = at.Table(names = ('name', 'dist', 'stype', 'rad', 'teff', 'mass', 'ra', 'dec', 'vmag', 'jmag', 'hmag', 'wdssep', 'wdsdmag'), dtype = ('S32', 'd', 'c', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd'))
+    
+    # Fill output star catalog
+    for i in range(name.shape[0]):
+        
+        # Check whether stellar type fits
+        if (stype[i] in s_type):
+            
+            # Check whether distance fits
+            if (dist[i] <= max_dist):
+                
+                # Check whether declination fits
+                if (min_dec <= dec[i] <= max_dec):
+                    
+                    SC_out.add_row([name[i], dist[i], stype[i], rad[i], teff[i], mass[i], ra[i], dec[i], vmag[i], jmag[i], hmag[i], wdssep[i], wdsdmag[i]])
+    
+    # Save output star catalog
+    io.ascii.write(SC_out, 'data/SC_out.tbl', format = 'ipac')
+    
+    print('Finished read_ltc')
     
     # Return output star catalog
     return SC_out

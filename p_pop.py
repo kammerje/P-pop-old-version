@@ -1,8 +1,8 @@
 """
 P_pop, a Python package to simulate exoplanet populations based on Kepler
 statistics. Information about the method can be found in this paper:
-https://ui.adsabs.harvard.edu/abs/2018A%26A...609A...4K/abstract. This library
-is maintained on GitHub at https://github.com/kammerje/P_pop.
+http://adsabs.harvard.edu/abs/2018A%26A...609A...4K. This library is maintained
+on GitHub at https://github.com/kammerje/P_pop.
 
 ===============================================================================
 Please cite Kammerer & Quanz 2018 (2018A&A...609A...4K) if you use P_pop for
@@ -14,8 +14,8 @@ This repository makes use of "forecaster"
 2017ApJ...834...17C) which must be cloned into the folder called "forecaster".
 
 Author: Jens Kammerer
-Version: 3.1.0
-Last edited: 30.07.19
+Version: 3.2.0
+Last edited: 08.10.19
 """
 
 

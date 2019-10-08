@@ -14,8 +14,8 @@ This repository makes use of "forecaster"
 2017ApJ...834...17C) which must be cloned into the folder called "forecaster".
 
 Author: Jens Kammerer
-Version: 3.1.0
-Last edited: 30.07.19
+Version: 3.2.0
+Last edited: 08.10.19
 """
 
 
@@ -31,15 +31,16 @@ import p_pop as pp
 # PARAMETERS - PLEASE CHANGE ACCORDING TO YOUR WISHES
 #==============================================================================
 # Name of the output table containing all the exoplanets
-logfile_name = 'SAG13_exocat500.txt'
+logfile_name = 'SAG13_ltc5000.txt'
 
 # Number of Monte-Carlo shoots
-nMC = 500
+nMC = 5000
 
 # Star catalog
-catalog = 'ExoCat'
+catalog = 'LTC'
     # 20pc_bright_sample - star catalog from Kammerer & Quanz 2018
     # ExoCat - Nearby Stellar Systems Catalog for Exoplanet Imaging Missions (Turnbull/NASA)
+    # LTC - LIFE Target Catalog
 
 # Scenario for the planet occurrence rates
 model = 0
@@ -63,12 +64,12 @@ albedo_model = 'uniform'
     # cahoy2010 - draw geometric albedo from Table 4 of Cahoy et al. 2010
 
 # Mission operating wavelength
-mission = 'VIS'
+mission = 'MIR'
     # MIR - mid-infrared (this will compute fluxes for LIFE)
     # VIS - visible (this will compute fluxes for LUVOIR)
 
 # Flux computation model
-fluxes_from = 'mags'
+fluxes_from = 'filters'
     # filters - computes fluxes using the filter curves provided below
     # mags - computes fluxes using the stellar magnitudes from the star catalog (so far, this only works for catalog=ExoCat & mission=VIS)
 
@@ -115,6 +116,12 @@ elif (catalog == 'ExoCat'):
                         max_dist=30, # Distance cut (pc) for the star catalog
                         min_dec=-90, # Declination cut (deg) for the star catalog
                         max_dec=90) # Declination cut (deg) for the star catalog
+elif (catalog == 'LTC'):
+    SC = io.read_ltc(path='data/LTCv2.csv',
+                     s_type=['B', 'A', 'F', 'G', 'K', 'M', 'D'], # Spectral types which should be put into the star catalog
+                     max_dist=30, # Distance cut (pc) for the star catalog
+                     min_dec=-90, # Declination cut (deg) for the star catalog
+                     max_dec=90) # Declination cut (deg) for the star catalog
 else:
     raise UserWarning('Star catalog '+catalog+' is not known')
 

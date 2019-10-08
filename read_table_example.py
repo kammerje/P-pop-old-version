@@ -14,8 +14,8 @@ This repository makes use of "forecaster"
 2017ApJ...834...17C) which must be cloned into the folder called "forecaster".
 
 Author: Jens Kammerer
-Version: 3.1.0
-Last edited: 30.07.19
+Version: 3.2.0
+Last edited: 08.10.19
 """
 
 
@@ -27,7 +27,7 @@ import numpy as np
 
 # MAIN
 #==============================================================================
-planets = open('SAG13_planets5000.txt', 'r')
+planets = open('planets10.txt', 'r')
 planets_lines = planets.readlines()
 
 Rp = []
