@@ -721,3 +721,66 @@ def read_filter_IRDIS(path='data/Vband.txt',
     
     # Return nothing
     return None
+
+def read_filter_METIS(path='data/METIS_Lp.dat',
+                     tag='METIS_Lp',
+                     lam_eff=5.6,
+                     W_eff=1.2):
+    """
+    Parameters
+    ----------
+    path : str
+        Path of MIRI filter curve
+    tag : str
+        Name of filter
+    lam_eff : float
+        Effective wavelength (microns)
+    W_eff : float
+        Effective width (microns)
+    """
+    
+    print('Started read_filter_METIS...')
+    
+    # Check parameters
+    if (isinstance(path, str) == False):
+        raise TypeError('path must be of type string')
+    if (isinstance(tag, str) == False):
+        raise TypeError('tag must be of type string')
+    lam_eff = float(lam_eff)
+    if (lam_eff <= 0):
+        raise ValueError('lam_eff must be positive')
+    W_eff = float(W_eff)
+    if (W_eff <= 0):
+        raise ValueError('W_eff must be positive')
+    
+    
+    # Open file
+    file = np.loadtxt(path)
+    # Convert lists for nodes and transmission to arrays
+    x = file[:,0]
+    y = file[:,1]
+    
+    # Define masks for arrays for nodes and transmission
+    mask1 = (lam_eff-2.*W_eff < x)
+    mask2 = (x < lam_eff+2.*W_eff)
+    
+    # Apply masks for arrays for nodes and transmission
+    x = x[mask1 & mask2]
+    y = y[mask1 & mask2]
+    
+#    plt.figure(figsize=(12, 9))
+#    plt.plot(x, y, label=tag)
+#    plt.xlabel('Wavelength [microns]')
+#    plt.ylabel('Transmission')
+#    plt.legend()
+#    plt.title('Filter curve')
+#    plt.show(block=True)
+    
+    # Create and save output file
+    out = [x, y, lam_eff, W_eff]
+    np.save('data/'+tag, out)
+    
+    print('Finished read_filter_METIS')
+    
+    # Return nothing
+    return None

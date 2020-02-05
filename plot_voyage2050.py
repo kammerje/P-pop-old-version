@@ -33,8 +33,8 @@ import inout as io
 
 # PARAMETERS
 #==============================================================================
-planets_path = 'SAG13_ltc5000.txt'
-fluxes_path = 'SAG13_ltc5000_LIFE.txt'
+planets_path = 'emile_testing_AG13_bright5.txt'
+fluxes_path = 'emile_testing_AG13_bright5_LIFE.txt'
 IWA = 5E-3 # arcsecs (@ 10 microns)
 OWA = 1. # arcsecs
 lam_F560W = 5.6E-6 # meters
@@ -43,10 +43,10 @@ lam_F1500W = 15E-6 # meters
 sensF560W = 0.16 # micro-Janskys
 sensF1000W = 0.54 # micro-Janskys
 sensF1500W = 1.39 # micro-Janskys
-nMC = 5000 # Number of MC shoots
+nMC = 5 # Number of MC shoots
 
 # Star catalog
-catalog = 'LTC'
+catalog = '20pc_bright_sample'
     # 20pc_bright_sample - star catalog from Kammerer & Quanz 2018
     # ExoCat - Nearby Stellar Systems Catalog for Exoplanet Imaging Missions (Turnbull/NASA)
     # LTC - LIFE Target Catalog

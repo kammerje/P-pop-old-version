@@ -31,13 +31,13 @@ import p_pop as pp
 # PARAMETERS - PLEASE CHANGE ACCORDING TO YOUR WISHES
 #==============================================================================
 # Name of the output table containing all the exoplanets
-logfile_name = 'SAG13_ltc5000.txt'
+logfile_name = 'test_photons222.txt'
 
 # Number of Monte-Carlo shoots
-nMC = 5000
+nMC = 1
 
 # Star catalog
-catalog = 'LTC'
+catalog = '20pc_bright_sample'
     # 20pc_bright_sample - star catalog from Kammerer & Quanz 2018
     # ExoCat - Nearby Stellar Systems Catalog for Exoplanet Imaging Missions (Turnbull/NASA)
     # LTC - LIFE Target Catalog
@@ -67,13 +67,25 @@ albedo_model = 'uniform'
 mission = 'MIR'
     # MIR - mid-infrared (this will compute fluxes for LIFE)
     # VIS - visible (this will compute fluxes for LUVOIR)
-
+    # METIS - Mp - Lp - N2 filters from METIS
 # Flux computation model
 fluxes_from = 'filters'
     # filters - computes fluxes using the filter curves provided below
     # mags - computes fluxes using the stellar magnitudes from the star catalog (so far, this only works for catalog=ExoCat & mission=VIS)
 
+#Apply the correlations in radii and periods as in the Paper from Weiss et al
+apply_correlations = True
+    # True - Applies the correlations
+    # False - Does not apply the 
 
+# Apply or not the stability check for systems
+apply_stability_check = True
+    # True - Applies the stability checks
+    # False - Does not apply the stability checks
+#How many mirros are collecting the light
+n_of_telescopes = 4
+#The radius of a single mirror
+radius_of_telescope = 1.75
 # READ FILTERS & STAR CATALOG
 #==============================================================================
 if (fluxes_from == 'filters'):
@@ -103,6 +115,19 @@ if (fluxes_from == 'filters'):
                          tag='Hband',
                          lam_eff=1.625,
                          W_eff=0.29)
+    # METIS filters
+    io.read_filter_METIS(path='data/METIS_Lp.dat',
+                         tag='Lp',
+                         lam_eff=3.6,
+                         W_eff=1)
+    io.read_filter_METIS(path='data/METIS_Mp.dat',
+                         tag='Mp',
+                         lam_eff=4.85,
+                         W_eff=2)
+    io.read_filter_METIS(path='data/METIS_N2.dat',
+                         tag='N2',
+                         lam_eff=10.15,
+                         W_eff=5)
 
 if (catalog == '20pc_bright_sample'):
     SC = io.read_20pc_bright_sample(path='data/20pc_bright_sample.tbl',
@@ -131,7 +156,6 @@ else:
 logfile = open(logfile_name, 'w')
 logfile.write('nMC\tRp\tPorb\ta\trp\tang_sep\tang_sep_max\tinc\tOmega\tomega\ttheta\tecc\tFinc\tAbond\tAgeomMIR\tAgeomVIS\tf\tTp\tMp\tdist\tRs\tTs\tMs\tstype\tzodis\tra\tdec\tnstar\t\n')
 logfile.close()
-
 for i in range(len(SC)):
     print('Star '+str(int(i+1))+' of '+str(int(len(SC))))
     
@@ -151,8 +175,10 @@ for i in range(len(SC)):
                            Ms=Ms,
                            model=model,
                            rates=rates,
-                           albedo_model=albedo_model)
-        
+                           albedo_model=albedo_model,
+                           apply_correlations = apply_correlations,
+                           apply_stability_check = apply_stability_check)
+                    
         for k in range(System.nplanets):
             Exoplanet = System.planets[k]
             
@@ -160,9 +186,17 @@ for i in range(len(SC)):
             logfile.write('%.0f\t' % j+'%.5f\t' % Exoplanet.Rp+'%.5f\t' % Exoplanet.Porb+'%.5f\t' % Exoplanet.a()+'%.5f\t' % Exoplanet.rp()+'%.5f\t' % Exoplanet.ang_sep()+'%.5f\t' % Exoplanet.ang_sep_max()+'%.5f\t' % Exoplanet.inc+'%.5f\t' % Exoplanet.Omega+'%.5f\t' % Exoplanet.omega+'%.5f\t' % Exoplanet.theta+'%.5f\t' % Exoplanet.ecc+'%.5f\t' % Exoplanet.Finc()+'%.5f\t' % Exoplanet.Abond+'%.5f\t' % Exoplanet.AgeomMIR+'%.5f\t' % Exoplanet.AgeomVIS+'%.5f\t' % Exoplanet.f()+'%.5f\t' % Exoplanet.Tp()+'%.5f\t' % Exoplanet.Mp+'%.5f\t' % Exoplanet.dist+'%.5f\t' % Exoplanet.Rs+'%.5f\t' % Exoplanet.Ts+'%.5f\t' % Exoplanet.Ms+stype+'\t%.5f\t' % Exoplanet.zodis+'%.5f\t' % ra+'%.5f\t' % dec+'%.0f\t' % i+'\n')
             logfile.close()
 
-
 # COMPUTE FLUXES
 #==============================================================================
+
+
+### Temporary add necessary for the absolute transmission curves
+### To be moved somewhere else in the future
+
+abs_trans = np.loadtxt("data/transmission_sum_full_rotation.dat", skiprows=1)
+trans_wavelengths = np.linspace(6,14, 81)
+
+####
 if (fluxes_from == 'filters'):
     if (mission == 'MIR'):
         # Read LIFE filters
@@ -176,14 +210,19 @@ if (fluxes_from == 'filters'):
         name1 = 'Vband'
         name2 = 'Jband'
         name3 = 'Hband'
+    elif(mission == 'METIS'):
+        temp_name = logfile_name[:-4] + '_METIS.txt'
+        name1 = 'Lp'
+        name2 = 'Mp'
+        name3 = 'N2'
     else:
         raise UserWarning('Mission operating wavelength '+mission+' is not known')
-    filter1 = np.load('data/'+name1+'.npy')
-    filter2 = np.load('data/'+name2+'.npy')
-    filter3 = np.load('data/'+name3+'.npy')
+    filter1 = np.load('data/'+name1+'.npy', allow_pickle = True)
+    filter2 = np.load('data/'+name2+'.npy', allow_pickle = True)
+    filter3 = np.load('data/'+name3+'.npy', allow_pickle = True)
     
     logfile = open(temp_name, 'w')
-    logfile.write('Ftherm_star\tFtherm_planet\tFrefl_planet\t\n')
+    logfile.write('Ftherm_star\tFtherm_planet\tFrefl_planet\tPhoton_planet\n')
     logfile.close()
     planets = open(logfile_name, 'r')
     planets_lines = planets.readlines()
@@ -216,9 +255,11 @@ if (fluxes_from == 'filters'):
                            trans=filter1[1],
                            lam_eff=filter1[2],
                            W_eff=filter1[3],
-                           mission=mission)
+                           mission=mission,
+                           n_telescope = n_of_telescopes,
+                           radius_telescope = radius_of_telescope)
             logfile = open(temp_name, 'a')
-            logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6))
+            logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6) +'%018.12f\t' % (flux.bb_therm_p_photons_int(trans_wavelengths, abs_trans)))
             logfile.close()
             
             flux = pp.flux(Rp=float(line_temp[col_Rp]),
@@ -234,9 +275,11 @@ if (fluxes_from == 'filters'):
                            trans=filter2[1],
                            lam_eff=filter2[2],
                            W_eff=filter2[3],
-                           mission=mission)
+                           mission=mission,
+                           n_telescope = n_of_telescopes,
+                           radius_telescope = radius_of_telescope)
             logfile = open(temp_name, 'a')
-            logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6))
+            logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6) +'%018.12f\t' % (flux.bb_therm_p_photons_int(trans_wavelengths, abs_trans)))
             logfile.close()
             
             flux = pp.flux(Rp=float(line_temp[col_Rp]),
@@ -252,9 +295,11 @@ if (fluxes_from == 'filters'):
                            trans=filter3[1],
                            lam_eff=filter3[2],
                            W_eff=filter3[3],
-                           mission=mission)
+                           mission=mission,
+                           n_telescope = n_of_telescopes,
+                           radius_telescope = radius_of_telescope)
             logfile = open(temp_name, 'a')
-            logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6)+'\n')
+            logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6) +'%018.12f\t' % (flux.bb_therm_p_photons_int(trans_wavelengths, abs_trans)) +'\n')
             logfile.close()
         else:
             print('Line %.0f: unappropriate data' % i)
