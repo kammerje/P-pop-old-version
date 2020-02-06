@@ -31,10 +31,10 @@ import p_pop as pp
 # PARAMETERS - PLEASE CHANGE ACCORDING TO YOUR WISHES
 #==============================================================================
 # Name of the output table containing all the exoplanets
-logfile_name = 'test_photons222.txt'
+logfile_name = 'updated_numbers.txt'
 
 # Number of Monte-Carlo shoots
-nMC = 1
+nMC = 50
 
 # Star catalog
 catalog = '20pc_bright_sample'
@@ -74,12 +74,12 @@ fluxes_from = 'filters'
     # mags - computes fluxes using the stellar magnitudes from the star catalog (so far, this only works for catalog=ExoCat & mission=VIS)
 
 #Apply the correlations in radii and periods as in the Paper from Weiss et al
-apply_correlations = True
+apply_correlations = False
     # True - Applies the correlations
     # False - Does not apply the 
 
 # Apply or not the stability check for systems
-apply_stability_check = True
+apply_stability_check = False
     # True - Applies the stability checks
     # False - Does not apply the stability checks
 #How many mirros are collecting the light
@@ -131,7 +131,7 @@ if (fluxes_from == 'filters'):
 
 if (catalog == '20pc_bright_sample'):
     SC = io.read_20pc_bright_sample(path='data/20pc_bright_sample.tbl',
-                                    s_type=['A', 'F', 'G', 'K', 'M'], # Spectral types which should be put into the star catalog
+                                    s_type=['F', 'G', 'K', 'M'], # Spectral types which should be put into the star catalog
                                     max_dist=20, # Distance cut (pc) for the star catalog
                                     min_dec=-90, # Declination cut (deg) for the star catalog
                                     max_dec=90) # Declination cut (deg) for the star catalog
@@ -194,7 +194,7 @@ for i in range(len(SC)):
 ### To be moved somewhere else in the future
 
 abs_trans = np.loadtxt("data/transmission_sum_full_rotation.dat", skiprows=1)
-trans_wavelengths = np.linspace(6,14, 81)
+#trans_wavelengths = np.linspace(6,14, 81)
 
 ####
 if (fluxes_from == 'filters'):
@@ -259,7 +259,7 @@ if (fluxes_from == 'filters'):
                            n_telescope = n_of_telescopes,
                            radius_telescope = radius_of_telescope)
             logfile = open(temp_name, 'a')
-            logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6) +'%018.12f\t' % (flux.bb_therm_p_photons_int(trans_wavelengths, abs_trans)))
+            logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6) +'%018.12f\t' % (flux.bb_therm_p_photons_int(abs_trans, 1)))
             logfile.close()
             
             flux = pp.flux(Rp=float(line_temp[col_Rp]),
@@ -279,7 +279,7 @@ if (fluxes_from == 'filters'):
                            n_telescope = n_of_telescopes,
                            radius_telescope = radius_of_telescope)
             logfile = open(temp_name, 'a')
-            logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6) +'%018.12f\t' % (flux.bb_therm_p_photons_int(trans_wavelengths, abs_trans)))
+            logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6) +'%018.12f\t' % (flux.bb_therm_p_photons_int(abs_trans, 2)))
             logfile.close()
             
             flux = pp.flux(Rp=float(line_temp[col_Rp]),
@@ -299,7 +299,7 @@ if (fluxes_from == 'filters'):
                            n_telescope = n_of_telescopes,
                            radius_telescope = radius_of_telescope)
             logfile = open(temp_name, 'a')
-            logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6) +'%018.12f\t' % (flux.bb_therm_p_photons_int(trans_wavelengths, abs_trans)) +'\n')
+            logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6) +'%018.12f\t' % (flux.bb_therm_p_photons_int(abs_trans, 3)) +'\n')
             logfile.close()
         else:
             print('Line %.0f: unappropriate data' % i)

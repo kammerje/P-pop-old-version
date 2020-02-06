@@ -33,8 +33,8 @@ import inout as io
 
 # PARAMETERS
 #==============================================================================
-planets_path = 'emile_testing_AG13_bright5.txt'
-fluxes_path = 'emile_testing_AG13_bright5_LIFE.txt'
+planets_path = 'updated_numbers.txt'
+fluxes_path = 'updated_numbers_LIFE.txt'
 IWA = 5E-3 # arcsecs (@ 10 microns)
 OWA = 1. # arcsecs
 lam_F560W = 5.6E-6 # meters
@@ -43,7 +43,7 @@ lam_F1500W = 15E-6 # meters
 sensF560W = 0.16 # micro-Janskys
 sensF1000W = 0.54 # micro-Janskys
 sensF1500W = 1.39 # micro-Janskys
-nMC = 5 # Number of MC shoots
+nMC = 50 # Number of MC shoots
 
 # Star catalog
 catalog = '20pc_bright_sample'
@@ -115,8 +115,8 @@ for line in fluxes_lines:
         print(line_temp)
     else:
         F560W += [float(line_temp[1])+float(line_temp[2])]
-        F1000W += [float(line_temp[4])+float(line_temp[5])]
-        F1500W += [float(line_temp[7])+float(line_temp[8])]
+        F1000W += [float(line_temp[5])+float(line_temp[6])]
+        F1500W += [float(line_temp[9])+float(line_temp[10])]
     i += 1
 fluxes.close()
 
@@ -141,7 +141,7 @@ master_mask = master_mask & (mask1 & mask3 & mask7) # consider all planets up to
 
 if (catalog == '20pc_bright_sample'):
     SC = io.read_20pc_bright_sample(path='data/20pc_bright_sample.tbl',
-                                    s_type=['A', 'F', 'G', 'K', 'M'], # Spectral types which should be put into the star catalog
+                                    s_type=[ 'F', 'G', 'K', 'M'], # Spectral types which should be put into the star catalog
                                     max_dist=20, # Distance cut (pc) for the star catalog
                                     min_dec=-90, # Declination cut (deg) for the star catalog
                                     max_dec=90) # Declination cut (deg) for the star catalog
@@ -160,7 +160,7 @@ elif (catalog == 'LTC'):
 else:
     raise UserWarning('Star catalog '+catalog+' is not known')
 
-import pdb; pdb.set_trace()
+#import pdb; pdb.set_trace()
 
 
 # HIST2D
@@ -274,115 +274,115 @@ import pdb; pdb.set_trace()
 # WATERFALL
 #==============================================================================
 ## Make masks for observable planets
-#mask560 = (mask2_F560W & mask4) & (mask1 & mask3)
-#mask1000 = (mask2_F1000W & mask5) & (mask1 & mask3)
-#mask1500 = (mask2_F1500W & mask6) & (mask1 & mask3)
-#
-## Make 1d histogram
-#total = np.zeros(2)
-#total[0] = np.sum(master_mask & (stype == 'M'))
-#total[1] = np.sum(master_mask & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
-#total /= float(nMC)
-#
-#band560 = np.zeros(2)
-#band560[0] = np.sum((mask560 & np.logical_not(mask1000) & np.logical_not(mask1500)) & (stype == 'M'))
-#band560[1] = np.sum((mask560 & np.logical_not(mask1000) & np.logical_not(mask1500)) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
-#band560 /= float(nMC)
-#band1000 = np.zeros(2)
-#band1000[0] = np.sum((np.logical_not(mask560) & mask1000 & np.logical_not(mask1500)) & (stype == 'M'))
-#band1000[1] = np.sum((np.logical_not(mask560) & mask1000 & np.logical_not(mask1500)) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
-#band1000 /= float(nMC)
-#band1500 = np.zeros(2)
-#band1500[0] = np.sum((np.logical_not(mask560) & np.logical_not(mask1000) & mask1500) & (stype == 'M'))
-#band1500[1] = np.sum((np.logical_not(mask560) & np.logical_not(mask1000) & mask1500) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
-#band1500 /= float(nMC)
-#
-#band5601000 = np.zeros(2)
-#band5601000[0] = np.sum((mask560 & mask1000 & np.logical_not(mask1500)) & (stype == 'M'))
-#band5601000[1] = np.sum((mask560 & mask1000 & np.logical_not(mask1500)) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
-#band5601000 /= float(nMC)
-#band10001500 = np.zeros(2)
-#band10001500[0] = np.sum((np.logical_not(mask560) & mask1000 & mask1500) & (stype == 'M'))
-#band10001500[1] = np.sum((np.logical_not(mask560) & mask1000 & mask1500) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
-#band10001500 /= float(nMC)
-#band5601500 = np.zeros(2)
-#band5601500[0] = np.sum((mask560 & np.logical_not(mask1000) & mask1500) & (stype == 'M'))
-#band5601500[1] = np.sum((mask560 & np.logical_not(mask1000) & mask1500) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
-#band5601500 /= float(nMC)
-#
-#band56010001500 = np.zeros(2)
-#band56010001500[0] = np.sum((mask560 & mask1000 & mask1500) & (stype == 'M'))
-#band56010001500[1] = np.sum((mask560 & mask1000 & mask1500) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
-#band56010001500 /= float(nMC)
-#
-## Make figure
-#plt.figure()
-#plt.rc('xtick', labelsize=12)
-#plt.rc('ytick', labelsize=12)
-#
-## Plot 1d histogram
-#plt.bar(0, height=np.sum(total), width=0.8, color='orange', edgecolor='black', label='FGK')
-#plt.bar(0, height=total[0], width=0.8, color='red', edgecolor='black', label='M')
-#
-#plt.bar(1, height=np.sum(total), width=0.8, color='orange', edgecolor='black')
-#plt.bar(1, height=np.sum(total)-band560[1], width=0.8, color='red', edgecolor='black')
-#plt.bar(1, height=np.sum(total)-np.sum(band560), width=0.9, color='white', edgecolor='none')
-#plt.bar(2, height=np.sum(total)-np.sum(band560), width=0.8, color='orange', edgecolor='black')
-#plt.bar(2, height=np.sum(total)-np.sum(band560)-band1000[1], width=0.8, color='red', edgecolor='black')
-#plt.bar(2, height=np.sum(total)-np.sum(band560)-np.sum(band1000), width=0.9, color='white', edgecolor='none')
-#plt.bar(3, height=np.sum(total)-np.sum(band560)-np.sum(band1000), width=0.8, color='orange', edgecolor='black')
-#plt.bar(3, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-band1500[1], width=0.8, color='red', edgecolor='black')
-#plt.bar(3, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500), width=0.9, color='white', edgecolor='none')
-#
-#plt.bar(4, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500), width=0.8, color='orange', edgecolor='black')
-#plt.bar(4, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-band5601000[1], width=0.8, color='red', edgecolor='black')
-#plt.bar(4, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000), width=0.9, color='white', edgecolor='none')
-#plt.bar(5, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000), width=0.8, color='orange', edgecolor='black')
-#plt.bar(5, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-band10001500[1], width=0.8, color='red', edgecolor='black')
-#plt.bar(5, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500), width=0.9, color='white', edgecolor='none')
-#plt.bar(6, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500), width=0.8, color='orange', edgecolor='black')
-#plt.bar(6, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)-band5601500[1], width=0.8, color='red', edgecolor='black')
-#plt.bar(6, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)-np.sum(band5601500), width=0.9, color='white', edgecolor='none')
-#
-#plt.bar(7, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)-np.sum(band5601500), width=0.8, color='orange', edgecolor='black')
-#plt.bar(7, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)-np.sum(band5601500)-band56010001500[1], width=0.8, color='red', edgecolor='black')
-#
-#plt.axhline(np.sum(total), 0.11/8., 1.89/8., color='black')
-#plt.axhline(np.sum(total)-np.sum(band560), 1.11/8., 2.89/8., color='black')
-#plt.axhline(np.sum(total)-np.sum(band560)-np.sum(band1000), 2.11/8., 3.89/8., color='black')
-#plt.axhline(np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500), 3.11/8., 4.89/8., color='black')
-#plt.axhline(np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000), 4.11/8., 5.89/8., color='black')
-#plt.axhline(np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500), 5.11/8., 6.89/8., color='black')
-#plt.axhline(np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)-np.sum(band5601500), 6.11/8., 7.89/8., color='black')
-#
-#plt.axvline(0.5, linestyle='--', color='black')
-#plt.axvline(3.5, linestyle='--', color='black')
-#plt.axvline(6.5, linestyle='--', color='black')
-#
-## Annotate 1d histogram
-#plt.text(0, np.sum(total)+20, '%.0f' % (np.sum(total)), va='center', ha='center', size=12)
-#plt.text(1, np.sum(total)+20, '%.0f' % (np.sum(band560)), va='center', ha='center', size=12)
-#plt.text(2, np.sum(total)-np.sum(band560)+20, '%.0f' % (np.sum(band1000)), va='center', ha='center', size=12)
-#plt.text(3, np.sum(total)-np.sum(band560)-np.sum(band1000)+20, '%.0f' % (np.sum(band1500)), va='center', ha='center', size=12)
-#plt.text(4, np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)+20, '%.0f' % (np.sum(band5601000)), va='center', ha='center', size=12)
-#plt.text(5, np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)+20, '%.0f' % (np.sum(band10001500)), va='center', ha='center', size=12)
-#plt.text(6, np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)+20, '%.0f' % (np.sum(band5601500)), va='center', ha='center', size=12)
-#plt.text(7, np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)-np.sum(band5601500)+20, '%.0f' % (np.sum(band56010001500)), va='center', ha='center', size=12)
-#
-## Set axes properties
-#plt.xlim([-0.5, 7.5])
-#plt.ylim([0, 500])
-##plt.ylim([0, 600])
-#plt.gca().tick_params(axis='x', direction='in', pad=-10)
-#plt.gca().set_xticks([0, 1, 2, 3, 4, 5, 6, 7])
-#plt.gca().set_xticklabels(['Total', '5.6', '10', '15', '5.6 & 10', '10 & 15', '5.6 & 15', '5.6 & 10 & 15'], fontsize=12, rotation=90, va='bottom')
-#plt.xlabel('Bands in which planets are detectable [microns]', fontsize=12)
-#plt.ylabel('Expected number of detectable planets', fontsize=12)
-#plt.gca().yaxis.grid(True)
-#plt.legend(loc='upper right', fontsize=12)
-#
-#plt.savefig('waterfall.pdf', bbox_inches='tight')
-#plt.close()
+mask560 = (mask2_F560W & mask4) & (mask1 & mask3)
+mask1000 = (mask2_F1000W & mask5) & (mask1 & mask3)
+mask1500 = (mask2_F1500W & mask6) & (mask1 & mask3)
+
+# Make 1d histogram
+total = np.zeros(2)
+total[0] = np.sum(master_mask & (stype == 'M'))
+total[1] = np.sum(master_mask & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
+total /= float(nMC)
+
+band560 = np.zeros(2)
+band560[0] = np.sum((mask560 & np.logical_not(mask1000) & np.logical_not(mask1500)) & (stype == 'M'))
+band560[1] = np.sum((mask560 & np.logical_not(mask1000) & np.logical_not(mask1500)) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
+band560 /= float(nMC)
+band1000 = np.zeros(2)
+band1000[0] = np.sum((np.logical_not(mask560) & mask1000 & np.logical_not(mask1500)) & (stype == 'M'))
+band1000[1] = np.sum((np.logical_not(mask560) & mask1000 & np.logical_not(mask1500)) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
+band1000 /= float(nMC)
+band1500 = np.zeros(2)
+band1500[0] = np.sum((np.logical_not(mask560) & np.logical_not(mask1000) & mask1500) & (stype == 'M'))
+band1500[1] = np.sum((np.logical_not(mask560) & np.logical_not(mask1000) & mask1500) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
+band1500 /= float(nMC)
+
+band5601000 = np.zeros(2)
+band5601000[0] = np.sum((mask560 & mask1000 & np.logical_not(mask1500)) & (stype == 'M'))
+band5601000[1] = np.sum((mask560 & mask1000 & np.logical_not(mask1500)) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
+band5601000 /= float(nMC)
+band10001500 = np.zeros(2)
+band10001500[0] = np.sum((np.logical_not(mask560) & mask1000 & mask1500) & (stype == 'M'))
+band10001500[1] = np.sum((np.logical_not(mask560) & mask1000 & mask1500) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
+band10001500 /= float(nMC)
+band5601500 = np.zeros(2)
+band5601500[0] = np.sum((mask560 & np.logical_not(mask1000) & mask1500) & (stype == 'M'))
+band5601500[1] = np.sum((mask560 & np.logical_not(mask1000) & mask1500) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
+band5601500 /= float(nMC)
+
+band56010001500 = np.zeros(2)
+band56010001500[0] = np.sum((mask560 & mask1000 & mask1500) & (stype == 'M'))
+band56010001500[1] = np.sum((mask560 & mask1000 & mask1500) & ((stype == 'F') | (stype == 'G') | (stype == 'K')))
+band56010001500 /= float(nMC)
+
+# Make figure
+plt.figure()
+plt.rc('xtick', labelsize=12)
+plt.rc('ytick', labelsize=12)
+
+# Plot 1d histogram
+plt.bar(0, height=np.sum(total), width=0.8, color='orange', edgecolor='black', label='FGK')
+plt.bar(0, height=total[0], width=0.8, color='red', edgecolor='black', label='M')
+
+plt.bar(1, height=np.sum(total), width=0.8, color='orange', edgecolor='black')
+plt.bar(1, height=np.sum(total)-band560[1], width=0.8, color='red', edgecolor='black')
+plt.bar(1, height=np.sum(total)-np.sum(band560), width=0.9, color='white', edgecolor='none')
+plt.bar(2, height=np.sum(total)-np.sum(band560), width=0.8, color='orange', edgecolor='black')
+plt.bar(2, height=np.sum(total)-np.sum(band560)-band1000[1], width=0.8, color='red', edgecolor='black')
+plt.bar(2, height=np.sum(total)-np.sum(band560)-np.sum(band1000), width=0.9, color='white', edgecolor='none')
+plt.bar(3, height=np.sum(total)-np.sum(band560)-np.sum(band1000), width=0.8, color='orange', edgecolor='black')
+plt.bar(3, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-band1500[1], width=0.8, color='red', edgecolor='black')
+plt.bar(3, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500), width=0.9, color='white', edgecolor='none')
+
+plt.bar(4, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500), width=0.8, color='orange', edgecolor='black')
+plt.bar(4, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-band5601000[1], width=0.8, color='red', edgecolor='black')
+plt.bar(4, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000), width=0.9, color='white', edgecolor='none')
+plt.bar(5, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000), width=0.8, color='orange', edgecolor='black')
+plt.bar(5, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-band10001500[1], width=0.8, color='red', edgecolor='black')
+plt.bar(5, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500), width=0.9, color='white', edgecolor='none')
+plt.bar(6, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500), width=0.8, color='orange', edgecolor='black')
+plt.bar(6, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)-band5601500[1], width=0.8, color='red', edgecolor='black')
+plt.bar(6, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)-np.sum(band5601500), width=0.9, color='white', edgecolor='none')
+
+plt.bar(7, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)-np.sum(band5601500), width=0.8, color='orange', edgecolor='black')
+plt.bar(7, height=np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)-np.sum(band5601500)-band56010001500[1], width=0.8, color='red', edgecolor='black')
+
+plt.axhline(np.sum(total), 0.11/8., 1.89/8., color='black')
+plt.axhline(np.sum(total)-np.sum(band560), 1.11/8., 2.89/8., color='black')
+plt.axhline(np.sum(total)-np.sum(band560)-np.sum(band1000), 2.11/8., 3.89/8., color='black')
+plt.axhline(np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500), 3.11/8., 4.89/8., color='black')
+plt.axhline(np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000), 4.11/8., 5.89/8., color='black')
+plt.axhline(np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500), 5.11/8., 6.89/8., color='black')
+plt.axhline(np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)-np.sum(band5601500), 6.11/8., 7.89/8., color='black')
+
+plt.axvline(0.5, linestyle='--', color='black')
+plt.axvline(3.5, linestyle='--', color='black')
+plt.axvline(6.5, linestyle='--', color='black')
+
+# Annotate 1d histogram
+plt.text(0, np.sum(total)+20, '%.0f' % (np.sum(total)), va='center', ha='center', size=12)
+plt.text(1, np.sum(total)+20, '%.0f' % (np.sum(band560)), va='center', ha='center', size=12)
+plt.text(2, np.sum(total)-np.sum(band560)+20, '%.0f' % (np.sum(band1000)), va='center', ha='center', size=12)
+plt.text(3, np.sum(total)-np.sum(band560)-np.sum(band1000)+20, '%.0f' % (np.sum(band1500)), va='center', ha='center', size=12)
+plt.text(4, np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)+20, '%.0f' % (np.sum(band5601000)), va='center', ha='center', size=12)
+plt.text(5, np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)+20, '%.0f' % (np.sum(band10001500)), va='center', ha='center', size=12)
+plt.text(6, np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)+20, '%.0f' % (np.sum(band5601500)), va='center', ha='center', size=12)
+plt.text(7, np.sum(total)-np.sum(band560)-np.sum(band1000)-np.sum(band1500)-np.sum(band5601000)-np.sum(band10001500)-np.sum(band5601500)+20, '%.0f' % (np.sum(band56010001500)), va='center', ha='center', size=12)
+
+# Set axes properties
+plt.xlim([-0.5, 7.5])
+plt.ylim([0, 500])
+#plt.ylim([0, 600])
+plt.gca().tick_params(axis='x', direction='in', pad=-10)
+plt.gca().set_xticks([0, 1, 2, 3, 4, 5, 6, 7])
+plt.gca().set_xticklabels(['Total', '5.6', '10', '15', '5.6 & 10', '10 & 15', '5.6 & 15', '5.6 & 10 & 15'], fontsize=12, rotation=90, va='bottom')
+plt.xlabel('Bands in which planets are detectable [microns]', fontsize=12)
+plt.ylabel('Expected number of detectable planets', fontsize=12)
+plt.gca().yaxis.grid(True)
+plt.legend(loc='upper right', fontsize=12)
+
+plt.savefig('waterfall.pdf', bbox_inches='tight')
+plt.close()
 
 
 # HABITABLE
@@ -502,10 +502,10 @@ bins = (bin_edges[:-1]+bin_edges[1:])/2.
 
 ww = np.argsort(np.array(SC['dist']))
 
-import pdb; pdb.set_trace()
+#import pdb; pdb.set_trace()
 
 plt.figure()
 plt.bar(bins, hist[ww])
 plt.show(block=True)
 
-import pdb; pdb.set_trace()
+#import pdb; pdb.set_trace()

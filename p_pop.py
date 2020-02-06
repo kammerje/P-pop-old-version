@@ -134,6 +134,7 @@ class system():
 			#dummy = Stats.weiss_radius_corr_skew(dummy)
 			#dummy = Stats.weiss_period_corr(dummy)
 			if(self.apply_correlations):
+				print("test")
 				dummy = Stats.weiss_radius_corr_kernel(dummy, kernel_radius)
 				dummy = Stats.weiss_period_corr_kernel(dummy, kernel_periods)
 				#dummy = Stats.weiss_separation_corr_kernel(dummy, kernel_separation)
@@ -1395,7 +1396,7 @@ class flux():
 		Computes integrated planet thermal blackbody flux observed through
 		filter (in Janskys)
 		"""
-		
+
 		# Check parameters
 		if (self.nodes is None):
 			raise UserWarning('This function is only available if a filter curve is provided')
@@ -1406,8 +1407,8 @@ class flux():
 		# Return integrated planet thermal blackbody flux observed through filter
 		return 1E+6*si.simps(self.bb_therm_p(self.nodes)*self.trans, self.nodes)/self.W_eff*(self.lam_eff*1E-6)**2/c*1E+26
 	def bb_therm_p_photons_int(self,
-							   transmission_wavelengths,
-							   transmission_curve):
+							   transmission_curve,
+							   idx):
 		"""
 		Computes integrated planet thermal blackbody flux observed through
 		filter (in photons per second per m^-2) taking into account the
@@ -1421,7 +1422,7 @@ class flux():
 		# Define constants
 		c = 299792458.
 		photon_flux = self.bb_therm_p_photons(self.nodes)
-		absolute_transmission = self.compute_transmission(transmission_wavelengths, transmission_curve)
+		absolute_transmission = self.compute_transmission(transmission_curve, idx)
 		throughput = 0.1
 		interferometer_loss = 0.5 #Because we are only taking the positive outputs
 		#area_of_collection = self.ntelescope * np.pi*self.radius_telescope**2
@@ -1430,13 +1431,20 @@ class flux():
 
 	############## INTERFEROMETER PART
 	def compute_transmission(self,
-					   transmission_wavelengths,
-					   transmission_curve):
+					   transmission_curve,
+					   idx):
 		
-		transmission = np.zeros(len(self.nodes))
+		#transmission = np.zeros(len(self.nodes))
 		#While we do not have the real absolute transmission curves,
 		#we simply generate a theoretical one using the curve for 10 micron for all the wavelengths
 		if(self.rp <= 1.643):
+			if self.rp not in transmission_curve[:,0]:
+			        interpolated_curve = interpolate.interp1d(transmission_curve[:,0], transmission_curve[:,idx], fill_value = "extrapolate")
+			        transmission = interpolated_curve(self.rp)
+			else:
+				transmission = transmission_curve[:,idx][np.where(transmission_curve[:,0] == self.rp)]
+			        """
+			        This part will be done when we get real transmission curves
 			real_trans = np.ones((256,len(transmission_wavelengths)+1))
 			for it in range (len(real_trans[0])):
 			    if(it == 0):
@@ -1451,6 +1459,7 @@ class flux():
 			        transmission[it] = interpolated_curve(self.rp)
 			    else:
 			        transmission[it] = curve[np.where(real_trans[:,0] == self.rp)]
+"""
 		return transmission
 
 	def find_nearest(self, array, value):
