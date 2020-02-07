@@ -31,7 +31,7 @@ import p_pop as pp
 # PARAMETERS - PLEASE CHANGE ACCORDING TO YOUR WISHES
 #==============================================================================
 # Name of the output table containing all the exoplanets
-logfile_name = 'updated_numbers.txt'
+logfile_name = 'updated_numbers1.txt'
 
 # Number of Monte-Carlo shoots
 nMC = 50
@@ -131,7 +131,7 @@ if (fluxes_from == 'filters'):
 
 if (catalog == '20pc_bright_sample'):
     SC = io.read_20pc_bright_sample(path='data/20pc_bright_sample.tbl',
-                                    s_type=['F', 'G', 'K', 'M'], # Spectral types which should be put into the star catalog
+                                    s_type=['A', 'F', 'G', 'K', 'M'], # Spectral types which should be put into the star catalog
                                     max_dist=20, # Distance cut (pc) for the star catalog
                                     min_dec=-90, # Declination cut (deg) for the star catalog
                                     max_dec=90) # Declination cut (deg) for the star catalog
@@ -154,7 +154,7 @@ else:
 # GENERATE PLANET POPULATION
 #==============================================================================
 logfile = open(logfile_name, 'w')
-logfile.write('nMC\tRp\tPorb\ta\trp\tang_sep\tang_sep_max\tinc\tOmega\tomega\ttheta\tecc\tFinc\tAbond\tAgeomMIR\tAgeomVIS\tf\tTp\tMp\tdist\tRs\tTs\tMs\tstype\tzodis\tra\tdec\tnstar\t\n')
+logfile.write('nMC\tRp\tPorb\ta\trp\tang_sep\tang_sep_max\tinc\tOmega\tomega\ttheta\tecc\tFinc\tAbond\tAgeomMIR\tAgeomVIS\tf\tTp\tMp\tdist\tRs\tTs\tMs\tstype\tzodis\tra\tdec\tnstar\trp_proj\t\n')
 logfile.close()
 for i in range(len(SC)):
     print('Star '+str(int(i+1))+' of '+str(int(len(SC))))
@@ -183,7 +183,7 @@ for i in range(len(SC)):
             Exoplanet = System.planets[k]
             
             logfile = open(logfile_name, 'a')
-            logfile.write('%.0f\t' % j+'%.5f\t' % Exoplanet.Rp+'%.5f\t' % Exoplanet.Porb+'%.5f\t' % Exoplanet.a()+'%.5f\t' % Exoplanet.rp()+'%.5f\t' % Exoplanet.ang_sep()+'%.5f\t' % Exoplanet.ang_sep_max()+'%.5f\t' % Exoplanet.inc+'%.5f\t' % Exoplanet.Omega+'%.5f\t' % Exoplanet.omega+'%.5f\t' % Exoplanet.theta+'%.5f\t' % Exoplanet.ecc+'%.5f\t' % Exoplanet.Finc()+'%.5f\t' % Exoplanet.Abond+'%.5f\t' % Exoplanet.AgeomMIR+'%.5f\t' % Exoplanet.AgeomVIS+'%.5f\t' % Exoplanet.f()+'%.5f\t' % Exoplanet.Tp()+'%.5f\t' % Exoplanet.Mp+'%.5f\t' % Exoplanet.dist+'%.5f\t' % Exoplanet.Rs+'%.5f\t' % Exoplanet.Ts+'%.5f\t' % Exoplanet.Ms+stype+'\t%.5f\t' % Exoplanet.zodis+'%.5f\t' % ra+'%.5f\t' % dec+'%.0f\t' % i+'\n')
+            logfile.write('%.0f\t' % j+'%.5f\t' % Exoplanet.Rp+'%.5f\t' % Exoplanet.Porb+'%.5f\t' % Exoplanet.a()+'%.5f\t' % Exoplanet.rp()+'%.5f\t' % Exoplanet.ang_sep()+'%.5f\t' % Exoplanet.ang_sep_max()+'%.5f\t' % Exoplanet.inc+'%.5f\t' % Exoplanet.Omega+'%.5f\t' % Exoplanet.omega+'%.5f\t' % Exoplanet.theta+'%.5f\t' % Exoplanet.ecc+'%.5f\t' % Exoplanet.Finc()+'%.5f\t' % Exoplanet.Abond+'%.5f\t' % Exoplanet.AgeomMIR+'%.5f\t' % Exoplanet.AgeomVIS+'%.5f\t' % Exoplanet.f()+'%.5f\t' % Exoplanet.Tp()+'%.5f\t' % Exoplanet.Mp+'%.5f\t' % Exoplanet.dist+'%.5f\t' % Exoplanet.Rs+'%.5f\t' % Exoplanet.Ts+'%.5f\t' % Exoplanet.Ms+stype+'\t%.5f\t' % Exoplanet.zodis+'%.5f\t' % ra+'%.5f\t' % dec+'%.0f\t'  % i +'%.5f\t' %Exoplanet.rp_proj()+'\n')
             logfile.close()
 
 # COMPUTE FLUXES
@@ -241,6 +241,7 @@ if (fluxes_from == 'filters'):
             col_dist = np.where(np.array(line_temp) == 'dist')[0][0]
             col_Rs = np.where(np.array(line_temp) == 'Rs')[0][0]
             col_Ts = np.where(np.array(line_temp) == 'Ts')[0][0]
+            col_rp_proj = np.where(np.array(line_temp) == 'rp_proj')[0][0]
         elif (len(line_temp) == ncol):
             flux = pp.flux(Rp=float(line_temp[col_Rp]),
                            Tp=float(line_temp[col_Tp]),
@@ -257,7 +258,9 @@ if (fluxes_from == 'filters'):
                            W_eff=filter1[3],
                            mission=mission,
                            n_telescope = n_of_telescopes,
-                           radius_telescope = radius_of_telescope)
+                           radius_telescope = radius_of_telescope,
+                           rp_proj = float(line_temp[col_rp_proj])
+                           )
             logfile = open(temp_name, 'a')
             logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6) +'%018.12f\t' % (flux.bb_therm_p_photons_int(abs_trans, 1)))
             logfile.close()
@@ -277,7 +280,9 @@ if (fluxes_from == 'filters'):
                            W_eff=filter2[3],
                            mission=mission,
                            n_telescope = n_of_telescopes,
-                           radius_telescope = radius_of_telescope)
+                           radius_telescope = radius_of_telescope,
+                           rp_proj = float(line_temp[col_rp_proj])
+                           )
             logfile = open(temp_name, 'a')
             logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6) +'%018.12f\t' % (flux.bb_therm_p_photons_int(abs_trans, 2)))
             logfile.close()
@@ -297,7 +302,9 @@ if (fluxes_from == 'filters'):
                            W_eff=filter3[3],
                            mission=mission,
                            n_telescope = n_of_telescopes,
-                           radius_telescope = radius_of_telescope)
+                           radius_telescope = radius_of_telescope,
+                           rp_proj = float(line_temp[col_rp_proj])
+                           )
             logfile = open(temp_name, 'a')
             logfile.write('%018.12f\t' % (flux.bb_therm_s_int()*1E6)+'%018.12f\t' % (flux.bb_therm_p_int()*1E6)+'%018.12f\t' % (flux.refl_p_int()*1E6) +'%018.12f\t' % (flux.bb_therm_p_photons_int(abs_trans, 3)) +'\n')
             logfile.close()

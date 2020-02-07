@@ -1219,7 +1219,8 @@ class flux():
 				 mags=None,
 				 F0=None,
 				 radius_telescope = 1.75,
-				 n_telescope = 4):
+				 n_telescope = 4,
+				 rp_proj =1):
 		"""
 		Initializes flux instance
 		"""
@@ -1241,6 +1242,12 @@ class flux():
 		if (rp <= 0):
 			raise ValueError('rp must be positive')
 		self.rp = rp
+
+		# Planet host star projected separation
+		rp_proj = float(rp_proj)
+		if (rp_proj <= 0):
+			raise ValueError('rp must be positive')
+		self.rp_proj = rp_proj
 		
 		# Planet geometric albedo (MIR)
 		AgeomMIR = float(AgeomMIR)
@@ -1423,26 +1430,27 @@ class flux():
 		c = 299792458.
 		photon_flux = self.bb_therm_p_photons(self.nodes)
 		absolute_transmission = self.compute_transmission(transmission_curve, idx)
-		throughput = 0.1
+		throughput = 0.05
+		quantum_efficiency = 0.6
 		interferometer_loss = 0.5 #Because we are only taking the positive outputs
 		#area_of_collection = self.ntelescope * np.pi*self.radius_telescope**2
 		# Return integrated planet thermal blackbody flux observed through filter
-		return  si.simps(photon_flux*self.trans*absolute_transmission*throughput*interferometer_loss, self.nodes)#/self.W_eff*(self.lam_eff*1E-6)**2/c*1E+26
+		return  si.simps(photon_flux*self.trans*absolute_transmission*throughput*quantum_efficiency*interferometer_loss, self.nodes)#/self.W_eff*(self.lam_eff*1E-6)**2/c*1E+26
 
 	############## INTERFEROMETER PART
 	def compute_transmission(self,
 					   transmission_curve,
 					   idx):
 		
-		#transmission = np.zeros(len(self.nodes))
+		transmission = 0
 		#While we do not have the real absolute transmission curves,
 		#we simply generate a theoretical one using the curve for 10 micron for all the wavelengths
-		if(self.rp <= 1.643):
-			if self.rp not in transmission_curve[:,0]:
+		if(self.rp_proj <= 1.643):
+			if self.rp_proj not in transmission_curve[:,0]:
 			        interpolated_curve = interpolate.interp1d(transmission_curve[:,0], transmission_curve[:,idx], fill_value = "extrapolate")
-			        transmission = interpolated_curve(self.rp)
+			        transmission = interpolated_curve(self.rp_proj)
 			else:
-				transmission = transmission_curve[:,idx][np.where(transmission_curve[:,0] == self.rp)]
+				transmission = transmission_curve[:,idx][np.where(transmission_curve[:,0] == self.rp_proj)]
 			        """
 			        This part will be done when we get real transmission curves
 			real_trans = np.ones((256,len(transmission_wavelengths)+1))
@@ -1459,7 +1467,8 @@ class flux():
 			        transmission[it] = interpolated_curve(self.rp)
 			    else:
 			        transmission[it] = curve[np.where(real_trans[:,0] == self.rp)]
-"""
+"""	
+		#print(transmission, idx, self.rp_proj)
 		return transmission
 
 	def find_nearest(self, array, value):
