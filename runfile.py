@@ -254,8 +254,6 @@ if (fluxes_from == 'filters'):
                            lam_eff=filter1[2],
                            W_eff=filter1[3],
                            mission=mission,
-                           n_telescope = n_of_telescopes,
-                           radius_telescope = radius_of_telescope,
                            rp_proj = float(line_temp[col_rp_proj])
                            )
             logfile = open(temp_name, 'a')
@@ -276,8 +274,6 @@ if (fluxes_from == 'filters'):
                            lam_eff=filter2[2],
                            W_eff=filter2[3],
                            mission=mission,
-                           n_telescope = n_of_telescopes,
-                           radius_telescope = radius_of_telescope,
                            rp_proj = float(line_temp[col_rp_proj])
                            )
             logfile = open(temp_name, 'a')
@@ -298,8 +294,6 @@ if (fluxes_from == 'filters'):
                            lam_eff=filter3[2],
                            W_eff=filter3[3],
                            mission=mission,
-                           n_telescope = n_of_telescopes,
-                           radius_telescope = radius_of_telescope,
                            rp_proj = float(line_temp[col_rp_proj])
                            )
             logfile = open(temp_name, 'a')
