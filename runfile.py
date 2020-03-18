@@ -31,10 +31,10 @@ import p_pop as pp
 # PARAMETERS - PLEASE CHANGE ACCORDING TO YOUR WISHES
 #==============================================================================
 # Name of the output table containing all the exoplanets
-logfile_name = 'updated_numbers1.txt'
+logfile_name = 'Results/final_report_500_bright.txt'
 
 # Number of Monte-Carlo shoots
-nMC = 50
+nMC = 500
 
 # Star catalog
 catalog = '20pc_bright_sample'
@@ -51,7 +51,7 @@ model = 0
 # Planet occurrence rates
 rates = 'sag13_dressing2015'
     # sag13 - NASA SAG13, Kopparapu et al. 2018
-    # hsu2019 - Hsu et al. 2019
+    # hsu2019 - Hsu et al. 2019 
     # dressing2015 - Dressing & Charbonneau 2015
     # fressin2013 - Fressin et al. 2013
     #
@@ -82,10 +82,7 @@ apply_correlations = False
 apply_stability_check = False
     # True - Applies the stability checks
     # False - Does not apply the stability checks
-#How many mirros are collecting the light
-n_of_telescopes = 4
-#The radius of a single mirror
-radius_of_telescope = 1.75
+
 # READ FILTERS & STAR CATALOG
 #==============================================================================
 if (fluxes_from == 'filters'):

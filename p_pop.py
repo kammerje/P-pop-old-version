@@ -78,9 +78,14 @@ class system():
 		# System orbital inclination
 		self.inc = np.arccos(2.*np.random.rand()-1.)
 		# System exozodiacal level
-		mu = np.log(26.); zeta = 1.2 # clean Sun-like (Ertel et al. 2018)
-#        mu = np.log(13.); zeta = 1.5 # clean (Ertel et al. 2018)
-		self.zodis = np.random.lognormal(mu, zeta)
+		kde_zodi = np.load('kde_datasets/zodi_nominal_kde.npy')
+		kernel_zodi = scp_stats.gaussian_kde(kde_zodi)
+		self.zodis = kernel_zodi.resample(1)[0]
+		while(self.zodis < 0):
+			self.zodis = kernel_zodi.resample(1)[0]
+# 		mu = np.log(26.); zeta = 1.2 # clean Sun-like (Ertel et al. 2018)
+# #        mu = np.log(13.); zeta = 1.5 # clean (Ertel et al. 2018)
+# 		self.zodis = np.random.lognormal(mu, zeta)
 		
 		# Draw planet radii, planet orbital periods and number of planets from Kepler statistics
 		Stats = stats(stype=self.stype,
@@ -134,7 +139,6 @@ class system():
 			#dummy = Stats.weiss_radius_corr_skew(dummy)
 			#dummy = Stats.weiss_period_corr(dummy)
 			if(self.apply_correlations):
-				print("test")
 				dummy = Stats.weiss_radius_corr_kernel(dummy, kernel_radius)
 				dummy = Stats.weiss_period_corr_kernel(dummy, kernel_periods)
 				#dummy = Stats.weiss_separation_corr_kernel(dummy, kernel_separation)
@@ -1429,13 +1433,15 @@ class flux():
 		# Define constants
 		c = 299792458.
 		photon_flux = self.bb_therm_p_photons(self.nodes)
-		absolute_transmission = self.compute_transmission(transmission_curve, idx)
+		#absolute_transmission = self.compute_transmission(transmission_curve, idx)
+		absolute_transmission = 1 # NEED TO BE CHANGED BACK
 		throughput = 0.05
 		quantum_efficiency = 0.6
 		interferometer_loss = 0.5 #Because we are only taking the positive outputs
 		#area_of_collection = self.ntelescope * np.pi*self.radius_telescope**2
 		# Return integrated planet thermal blackbody flux observed through filter
-		return  si.simps(photon_flux*self.trans*absolute_transmission*throughput*quantum_efficiency*interferometer_loss, self.nodes)#/self.W_eff*(self.lam_eff*1E-6)**2/c*1E+26
+		#*throughput*quantum_efficiency*interferometer_loss
+		return  si.simps(photon_flux*self.trans*absolute_transmission, self.nodes)#/self.W_eff*(self.lam_eff*1E-6)**2/c*1E+26
 
 	############## INTERFEROMETER PART
 	def compute_transmission(self,
